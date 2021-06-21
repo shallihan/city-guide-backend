@@ -48,7 +48,7 @@ const signup = async (req, res, next) => {
   try {
     existingUser = await User.findOne({ email: email });
   } catch (err) {
-    const error = new HttpError("Login failed.", 500);
+    const error = new HttpError("Sign up failed.", 500);
     return next(error);
   }
 
