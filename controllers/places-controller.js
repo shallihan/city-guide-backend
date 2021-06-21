@@ -20,18 +20,27 @@ let PLACES = [
   },
 ];
 
-const getPlaceById = (req, res, next) => {
+const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
-  const place = PLACES.find((place) => {
-    return place.id === placeId;
-  });
+  let place;
+  try {
+    place = await Place.findById(placeId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not find a place with the provided place ID.",
+      500
+    );
+    return next(error);
+  }
+
   if (!place) {
-    throw new HttpError(
+    const error = new HttpError(
       "Could not find a place with the provided place ID.",
       404
     );
+    return next(error);
   }
-  res.json({ place });
+  res.json({ place: place.toObject({ getters: true }) });
 };
 
 const getPlacesByUserId = (req, res, next) => {
@@ -70,7 +79,7 @@ const createPlace = async (req, res, next) => {
     location: coordinates,
     creator,
   });
-  
+
   try {
     const result = await createdPlace.save();
   } catch (err) {
