@@ -1,7 +1,9 @@
+const mongoose = require("mongoose");
 const HttpError = require("../models/http-error");
-const { v4: uuidv4 } = require('uuid');
-const { validationResult } = require('express-validator');
-const getCoordinatesForAddress = require('../util/location');
+const { v4: uuidv4 } = require("uuid");
+const { validationResult } = require("express-validator");
+const getCoordinatesForAddress = require("../util/location");
+const Place = require("../models/place");
 
 let PLACES = [
   {
@@ -47,8 +49,10 @@ const getPlacesByUserId = (req, res, next) => {
 
 const createPlace = async (req, res, next) => {
   const errors = validationResult(req);
-  if(!errors.isEmpty()) {
-   return next(new HttpError('Invalid inputs passed, please check your data', 422));
+  if (!errors.isEmpty()) {
+    return next(
+      new HttpError("Invalid inputs passed, please check your data", 422)
+    );
   }
   const { title, description, address, creator } = req.body;
   let coordinates;
@@ -57,42 +61,48 @@ const createPlace = async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
-  const createdPlace = {
-    id: uuidv4(),
+  const createdPlace = new Place({
     title,
     description,
-    location: coordinates,
+    image:
+      "https://images.unsplash.com/photo-1445865272827-4894eb9d48de?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1650&q=80",
     address,
+    location: coordinates,
     creator,
-  };
-  PLACES.push(createdPlace);
+  });
   
+  try {
+    const result = await createdPlace.save();
+  } catch (err) {
+    const error = new HttpError("Creating place, failed", 500);
+    return next(err);
+  }
 
-  res.status(201).json({ place: createdPlace});
+  res.status(201).json({ place: createdPlace });
 };
 
 const updatePlace = (req, res, next) => {
   const errors = validationResult(req);
-  if(!errors.isEmpty()) {
-   throw new HttpError('Invalid inputs passed, please check your data', 422);
+  if (!errors.isEmpty()) {
+    throw new HttpError("Invalid inputs passed, please check your data", 422);
   }
   const { title, description } = req.body;
   const placeId = req.params.pid;
-  const updatedPlace = {...PLACES.find(place => place.id === placeId)};
-  const placeIndex = PLACES.findIndex(place => place.id === placeId);
+  const updatedPlace = { ...PLACES.find((place) => place.id === placeId) };
+  const placeIndex = PLACES.findIndex((place) => place.id === placeId);
   updatedPlace.title = title;
   updatedPlace.description = description;
   PLACES[placeIndex] = updatedPlace;
-  res.status(200).json({ place: updatedPlace});
+  res.status(200).json({ place: updatedPlace });
 };
 
 const deletePlace = (req, res, next) => {
   const placeId = req.params.pid;
-  if (!PLACES.find(place => place.id === placeId)){
+  if (!PLACES.find((place) => place.id === placeId)) {
     throw new HttpError("Could not find a place to delete", 404);
   }
-  PLACES = PLACES.filter(place => place.id !== placeId);
-  res.status(200).json({ message: "Deleted"});
+  PLACES = PLACES.filter((place) => place.id !== placeId);
+  res.status(200).json({ message: "Deleted" });
 };
 
 exports.getPlaceById = getPlaceById;
