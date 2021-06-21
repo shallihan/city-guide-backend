@@ -18,12 +18,21 @@ const getUsers = (req, res, next) => {
   res.json({ users: USERS });
 };
 
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
-  const identifiedUser = USERS.find((user) => user.email === email);
-  if (!identifiedUser || identifiedUser.password !== password) {
-    throw new HttpError("Could not find account with that email", 401);
+  let existingUser;
+
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new HttpError("Login failed.", 500);
+    return next(error);
   }
+
+  if(!existingUser || existingUser.password !== password) {
+      return next(new HttpError('Invalid credentials, could not log you in', 401));
+  }
+ 
   res.json({ message: "Logged In" });
 };
 
@@ -35,10 +44,11 @@ const signup = async (req, res, next) => {
   const { name, email, password, places } = req.body;
 
   let existingUser;
+
   try {
     existingUser = await User.findOne({ email: email });
   } catch (err) {
-    const error = new HttpError("Sign up failed.", 500);
+    const error = new HttpError("Login failed.", 500);
     return next(error);
   }
 
