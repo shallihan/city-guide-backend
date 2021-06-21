@@ -5,17 +5,14 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const User = require("../models/user");
 
-const USERS = [
-  {
-    id: "u1",
-    name: "Max Schwarz",
-    email: "max@text.com",
-    password: "password",
-  },
-];
-
-const getUsers = (req, res, next) => {
-  res.json({ users: USERS });
+const getUsers = async (req, res, next) => {
+  let users;
+  try {
+    users = await User.find({}, '-password');
+  } catch (err) {
+    return next(new HttpError("Fetching users failed", 500));
+  }
+  res.json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
 
 const login = async (req, res, next) => {
@@ -29,17 +26,21 @@ const login = async (req, res, next) => {
     return next(error);
   }
 
-  if(!existingUser || existingUser.password !== password) {
-      return next(new HttpError('Invalid credentials, could not log you in', 401));
+  if (!existingUser || existingUser.password !== password) {
+    return next(
+      new HttpError("Invalid credentials, could not log you in", 401)
+    );
   }
- 
+
   res.json({ message: "Logged In" });
 };
 
 const signup = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new HttpError("Invalid inputs passed, please check your data", 422));
+    return next(
+      new HttpError("Invalid inputs passed, please check your data", 422)
+    );
   }
   const { name, email, password, places } = req.body;
 
