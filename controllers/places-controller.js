@@ -4,21 +4,8 @@ const { v4: uuidv4 } = require("uuid");
 const { validationResult } = require("express-validator");
 const getCoordinatesForAddress = require("../util/location");
 const Place = require("../models/place");
+const User = require("../models/user");
 
-let PLACES = [
-  {
-    id: "p1",
-    title: "SQIRL Cafe",
-    description:
-      "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Reiciendis, vitae?",
-    location: {
-      lat: 34.0844664,
-      lng: -118.2866903,
-    },
-    address: "720 N Virgil Ave, Los Angeles, CA 90029, United States",
-    creator: "u1",
-  },
-];
 
 const getPlaceById = async (req, res, next) => {
   const placeId = req.params.pid;
@@ -84,8 +71,26 @@ const createPlace = async (req, res, next) => {
     creator,
   });
 
+  let user;
   try {
-    const result = await createdPlace.save();
+    user = await User.findById(creator);
+  } catch (err) {
+    return next(new HttpError('Creating a place failed', 500));
+  }
+
+  if(!user) {
+    return next(new HttpError('Could not find user for provided id', 404));
+  }
+
+  console.log(user);
+
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    await createdPlace.save({ session: session });
+    user.places.push(createdPlace);
+    await user.save({ session: session });
+    await session.commitTransaction();
   } catch (err) {
     const error = new HttpError("Creating place, failed", 500);
     return next(err);
