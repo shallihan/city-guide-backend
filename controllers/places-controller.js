@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const mongoose = require("mongoose");
 const HttpError = require("../models/http-error");
 const { v4: uuidv4 } = require("uuid");
@@ -72,8 +74,7 @@ const createPlace = async (req, res, next) => {
   const createdPlace = new Place({
     title,
     description,
-    image:
-      "https://images.unsplash.com/photo-1445865272827-4894eb9d48de?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1650&q=80",
+    image: req.file.path,
     address,
     location: coordinates,
     creator,
@@ -158,6 +159,8 @@ const deletePlace = async (req, res, next) => {
     return next(new HttpError("Could not find place for provided id", 404));
   }
 
+  const imagePath = place.image;
+
   try {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -172,6 +175,10 @@ const deletePlace = async (req, res, next) => {
     );
     return next(error);
   }
+
+  fs.unlink(imagePath, err => {
+    console.log(err);
+  });
 
   res.status(200).json({ message: "Deleted" });
 };
