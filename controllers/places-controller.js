@@ -130,7 +130,7 @@ const updatePlace = async (req, res, next) => {
   }
 
   if(place.creator.toString() !== req.userData.userId) {
-    const error = new HttpError("Unauthorized Access. You can not edit a entry that you didn't create.", 401);
+    const error = new HttpError("Unauthorized Access. You can not edit an entry that you didn't create.", 401);
     return next(error);
   }
 
@@ -163,6 +163,11 @@ const deletePlace = async (req, res, next) => {
 
   if (!place) {
     return next(new HttpError("Could not find place for provided id", 404));
+  }
+
+  if(place.creator.id !== req.userData.userId) {
+    const error = new HttpError("Unauthorized Access. You can not delete an entry that you didn't create.", 401);
+    return next(error);
   }
 
   const imagePath = place.image;
