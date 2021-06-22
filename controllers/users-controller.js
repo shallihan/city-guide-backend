@@ -1,7 +1,7 @@
 const { text } = require("body-parser");
-
-const HttpError = require("../models/http-error");
 const { validationResult } = require("express-validator");
+const bcrypt = require('bcrypt');
+const HttpError = require("../models/http-error");
 const User = require("../models/user");
 
 const getUsers = async (req, res, next) => {
@@ -61,11 +61,19 @@ const signup = async (req, res, next) => {
     );
   }
 
+  let hashedPassword;
+  try {
+  hashedPassword = await bcrypt.hash(password, 12);
+  } catch(err) {
+    const error = new Error('Could not create user, please try again', 500);
+    return next(error);
+  }
+
   const createdUser = new User({
     name,
     email,
     image: req.file.path,
-    password,
+    password: hashedPassword,
     places: [],
   });
 
