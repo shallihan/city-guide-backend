@@ -11,6 +11,7 @@
 
 # misc
 .DS_Store
+nodemon.json
 .env
 .env.local
 .env.development.local
